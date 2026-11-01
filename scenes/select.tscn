@@ -1,0 +1,68 @@
+[gd_scene format=3 uid="uid://k7675mny4etp"]
+
+[ext_resource type="Script" uid="uid://bjsj5vit87csi" path="res://scripts/select.gd" id="1_rtpy7"]
+[ext_resource type="Script" uid="uid://jk5m4uxp78a6" path="res://scripts/clouds.gd" id="1_x8rwt"]
+
+[sub_resource type="Environment" id="Environment_rtpy7"]
+background_mode = 1
+background_color = Color(0.7490196, 0.8901961, 0.9411765, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.5411765, 0.56078434, 0.70980394, 1)
+ambient_light_energy = 0.4
+tonemap_mode = 4
+
+[node name="Select" type="Node3D" unique_id=81797879 node_paths=PackedStringArray("title", "pet_name")]
+script = ExtResource("1_rtpy7")
+title = NodePath("CanvasLayer/Title")
+pet_name = NodePath("CanvasLayer/PetName")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=103903188]
+transform = Transform3D(0.99999994, 0, 0, 0, 0.81915206, 0.57357645, 0, -0.57357645, 0.81915206, 3.2, 5, 8.7)
+projection = 1
+size = 7.0
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1241909305]
+transform = Transform3D(0.8660254, -0.38302222, 0.32139382, 0, 0.64278764, 0.76604444, -0.5, -0.66341394, 0.5566704, 0, 0, 0)
+light_color = Color(1, 0.94509804, 0.8392157, 1)
+shadow_enabled = true
+shadow_blur = 2.0
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1054086602]
+environment = SubResource("Environment_rtpy7")
+
+[node name="Clouds" type="Node3D" parent="." unique_id=740902942]
+script = ExtResource("1_x8rwt")
+count = 16
+center = Vector3(3.2, 0, 1.6)
+min_radius = 8.0
+max_radius = 14.0
+cloud_scale = 0.5
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=752123036]
+
+[node name="Title" type="Label" parent="CanvasLayer" unique_id=1196656486]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 67.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.11372549, 0.16862746, 0.3254902, 1)
+theme_override_constants/outline_size = 12
+theme_override_font_sizes/font_size = 48
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PetName" type="Label" parent="CanvasLayer" unique_id=138208017]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -67.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.11372549, 0.16862746, 0.3254902, 1)
+theme_override_constants/outline_size = 12
+theme_override_font_sizes/font_size = 36
+horizontal_alignment = 1
+vertical_alignment = 1

@@ -11,9 +11,13 @@ config_version=5
 [application]
 
 config/name="Reflex"
-run/main_scene="uid://dtnssci3pub5v"
+run/main_scene="uid://k7675mny4etp"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[autoload]
+
+Game="*uid://cl3w16tw7rxrd"
 
 [display]
 
