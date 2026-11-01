@@ -75,10 +75,12 @@ A        B
 
 ## Visual style
 
-- Render at 320×180, Stretch Mode `viewport`, textures filtered with **Nearest**.
-- Fixed isometric camera, so the whole board is visible at once.
-- A: day palette, B: night palette, so you can tell the islands apart at a glance.
-- One palette from [Lospec](https://lospec.com/palette-list) for the whole game.
+- **Cozy, rounded, warm pastels, lots of detail**: slightly childlike but not too much.
+- 1280×720, Stretch Mode `canvas_items`, MSAA 3D 4× for smooth edges.
+- Fixed isometric camera (orthogonal, ~50° from above), so the whole board is visible at once.
+- Board tiles are rounded cubes (KayKit Block Bits); props and decorations from the Kenney Platformer Kit and KayKit packs.
+- **Golden rule: details go on the frame, never on the board.** Trees, flowers, fences, lanterns live on island edges and around them. Playable tiles stay clean and readable.
+- Idea: island A is summer (grass), island B is its winter reflection (snow), so you can tell them apart at a glance.
 
 ## Juice (after the core works)
 

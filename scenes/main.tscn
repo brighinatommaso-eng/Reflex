@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://dtnssci3pub5v"]
+
+[ext_resource type="Script" uid="uid://31bir8f5d321" path="res://scripts/board.gd" id="1_o5qli"]
+[ext_resource type="Script" uid="uid://jk5m4uxp78a6" path="res://scripts/clouds.gd" id="2_0wfyh"]
+
+[sub_resource type="Environment" id="Environment_0quu1"]
+background_mode = 1
+background_color = Color(0.7490196, 0.8901961, 0.9411765, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.5411765, 0.56078434, 0.70980394, 1)
+ambient_light_energy = 0.4
+tonemap_mode = 4
+
+[node name="Main" type="Node3D" unique_id=760006749]
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1181196882]
+transform = Transform3D(0.70710677, -0.5416752, 0.45451948, 0, 0.64278764, 0.76604444, -0.70710677, -0.5416752, 0.45451948, 8, 10.1, 8)
+projection = 1
+size = 8.0
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1382927736]
+transform = Transform3D(0.8660254, -0.38302222, 0.32139382, 0, 0.64278764, 0.76604444, -0.5, -0.66341394, 0.5566704, 0, 0, 0)
+light_color = Color(1, 0.94509804, 0.8392157, 1)
+shadow_enabled = true
+shadow_blur = 2.0
+
+[node name="Board" type="Node3D" parent="." unique_id=1406624914]
+script = ExtResource("1_o5qli")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=994450347]
+environment = SubResource("Environment_0quu1")
+
+[node name="Clouds" type="Node3D" parent="." unique_id=1074440462]
+script = ExtResource("2_0wfyh")
+cloud_scale = 0.35

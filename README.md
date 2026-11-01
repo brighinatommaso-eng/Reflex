@@ -59,7 +59,7 @@ Reflex/
 ## Built with
 
 - [Godot 4](https://godotengine.org): engine
-- Rendered at low resolution and scaled up with nearest-neighbour filtering for the pixel look
+- Cozy, rounded low-poly style built from free CC0 asset packs (see Credits)
 - Time tracked with [Hackatime](https://hackatime.hackclub.com)
 
 ## Credits
@@ -70,7 +70,10 @@ Third-party assets (models, sounds, music, fonts) are listed here along with the
 
 | Asset | Author | Licence |
 |---|---|---|
-| _none yet_ | | |
+| [Platformer Pack](https://kaylousberg.itch.io/kaykit-platformer) | Kay Lousberg (KayKit) | CC0 1.0 |
+| [Block Bits](https://kaylousberg.itch.io/block-bits) | Kay Lousberg (KayKit) | CC0 1.0 |
+| [Character Pack: Adventurers](https://kaylousberg.itch.io/kaykit-adventurers) | Kay Lousberg (KayKit) | CC0 1.0 |
+| [Platformer Kit](https://kenney.nl/assets/platformer-kit) | Kenney | CC0 1.0 |
 
 ## Licence
 
