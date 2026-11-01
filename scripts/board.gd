@@ -27,11 +27,10 @@ const FLOOR_WINTER := preload("res://assets/kaykit_blockbits/models/dirt_with_sn
 const WALL := preload("res://assets/kenney_platformer/models/rocks.glb")
 const GOAL := preload("res://assets/kenney_platformer/models/flag.glb")
 
-
-# "static" = la variabile sopravvive quando la scena viene ricaricata
 static var level_index := 0
 
-@export var message: Label  # la scritta al centro dello schermo
+@export var message: Label      # la scritta al centro dello schermo
+@export var tutorial: Control   # il pannello con le istruzioni
 
 class Walker:
 	var rows: Array
@@ -50,6 +49,14 @@ func _ready() -> void:
 	var level: Dictionary = LEVELS[level_index]
 	walkers.append(build_island(level["a"], Vector3.ZERO, FLOOR_SUMMER, load(Game.pet_a)))
 	walkers.append(build_island(level["b"], ISLAND_B_ORIGIN, FLOOR_WINTER, load(Game.pet_b)))
+	if level_index == 0 and not Game.tutorial_seen:
+		message.hide()
+		tutorial.show()
+	else:
+		tutorial.hide()
+		intro_message()
+
+func intro_message() -> void:
 	show_message("Level %d" % (level_index + 1))
 	await get_tree().create_timer(1.2).timeout
 	if not won:
@@ -102,11 +109,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		get_tree().change_scene_to_file("res://scenes/select.tscn")
 		return
+	if tutorial.visible:
+		# finché il tutorial è aperto, conta solo Invio
+		if event.is_action_pressed("ui_accept"):
+			tutorial.hide()
+			Game.tutorial_seen = true
+			intro_message()
+		return
 	if event.is_action_pressed("restart"):
 		get_tree().reload_current_scene()
 		return
 	if won:
-		return  # livello finito: ignora le frecce
+		return
 	if event.is_action_pressed("undo") and not moving:
 		undo()
 		return
