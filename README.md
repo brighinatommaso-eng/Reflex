@@ -20,7 +20,8 @@ Reflex is a small 3D pixel-art puzzle game. Two islands float face to face with 
 | `W` `A` `S` `D` / arrow keys | Move (the reflection moves mirrored) |
 | `Z` | Undo the last move |
 | `R` | Restart the level |
-| `Esc` | Pause / level select |
+| `Enter` | Confirm (character select, tutorial) |
+| `Esc` | Back to character select |
 
 ## How it works
 
@@ -74,6 +75,7 @@ Third-party assets (models, sounds, music, fonts) are listed here along with the
 | [Block Bits](https://kaylousberg.itch.io/block-bits) | Kay Lousberg (KayKit) | CC0 1.0 |
 | [Platformer Kit](https://kenney.nl/assets/platformer-kit) | Kenney | CC0 1.0 |
 | [Cube Pets](https://kenney.nl/assets/cube-pets) | Kenney | CC0 1.0 |
+| [Input Prompts](https://kenney.nl/assets/input-prompts) | Kenney | CC0 1.0 |
 | [Ultimate Platformer Pack](https://quaternius.itch.io/ultimate-platformer-pack) (clouds) | Quaternius | CC0 1.0 |
 
 ## Licence
