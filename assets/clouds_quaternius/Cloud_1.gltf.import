@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://duks2024rfl7e"
-path="res://.godot/imported/Cloud1.fbx-95e46ee7c8615f194c4d886f9854269c.scn"
+uid="uid://baff07swx0wxt"
+path="res://.godot/imported/Cloud_1.gltf-dbd2f293786a4645965caf620ed7d491.scn"
 
 [deps]
 
-source_file="res://assets/clouds/Cloud1.fbx"
-dest_files=["res://.godot/imported/Cloud1.fbx-95e46ee7c8615f194c4d886f9854269c.scn"]
+source_file="res://assets/clouds_quaternius/Cloud_1.gltf"
+dest_files=["res://.godot/imported/Cloud_1.gltf-dbd2f293786a4645965caf620ed7d491.scn"]
 
 [params]
 
@@ -32,7 +32,7 @@ meshes/force_disable_compression=false
 skins/use_named_skins=true
 animation/import=true
 animation/fps=30
-animation/trimming=true
+animation/trimming=false
 animation/remove_immutable_tracks=true
 animation/import_rest_as_RESET=false
 import_script/path=""
@@ -40,7 +40,6 @@ materials/extract=0
 materials/extract_format=0
 materials/extract_path=""
 _subresources={}
-fbx/importer=0
-fbx/allow_geometry_helper_nodes=false
-fbx/embedded_image_handling=1
-fbx/naming_version=2
+gltf/naming_version=2
+gltf/embedded_image_handling=1
+gltf/texture_map_mode=1

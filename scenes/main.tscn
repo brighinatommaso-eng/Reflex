@@ -32,4 +32,6 @@ environment = SubResource("Environment_0quu1")
 
 [node name="Clouds" type="Node3D" parent="." unique_id=1074440462]
 script = ExtResource("2_0wfyh")
-cloud_scale = 0.35
+count = 16
+max_radius = 11.0
+cloud_scale = 0.5

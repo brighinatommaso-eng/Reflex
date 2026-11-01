@@ -74,6 +74,7 @@ Third-party assets (models, sounds, music, fonts) are listed here along with the
 | [Block Bits](https://kaylousberg.itch.io/block-bits) | Kay Lousberg (KayKit) | CC0 1.0 |
 | [Character Pack: Adventurers](https://kaylousberg.itch.io/kaykit-adventurers) | Kay Lousberg (KayKit) | CC0 1.0 |
 | [Platformer Kit](https://kenney.nl/assets/platformer-kit) | Kenney | CC0 1.0 |
+| [Ultimate Platformer Pack](https://quaternius.itch.io/ultimate-platformer-pack) (clouds) | Quaternius | CC0 1.0 |
 
 ## Licence
 
