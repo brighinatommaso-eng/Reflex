@@ -1,46 +1,68 @@
 extends Node3D
 
+# Livello 1: l'isola B è lo specchio dell'isola A
 const LEVEL_A := [
 	"P...",
 	"....",
 	".#..",
 	"...G",
 ]
+const LEVEL_B := [
+	"...P",
+	"....",
+	"..#.",
+	"G...",
+]
 
 const TILE := 1.0
+const ISLAND_B_ORIGIN := Vector3(6, 0, 0)  # l'isola B sta 6 caselle più a destra
 const PLAYER_SCALE := 0.5
 const PLAYER_LIFT := 0.15
-const MOVE_TIME := 0.15     # durata di un passo, in secondi
+const MOVE_TIME := 0.15
 
 const FLOOR_SUMMER := preload("res://assets/kaykit_blockbits/models/dirt_with_grass.gltf")
+const FLOOR_WINTER := preload("res://assets/kaykit_blockbits/models/dirt_with_snow.gltf")
 const WALL := preload("res://assets/kenney_platformer/models/rocks.glb")
 const GOAL := preload("res://assets/kenney_platformer/models/flag.glb")
-const PET := preload("res://assets/cube_pets/animal-bunny.glb")
+const PET_A := preload("res://assets/cube_pets/animal-bunny.glb")
+const PET_B := preload("res://assets/cube_pets/animal-cat.glb")
 
-var player: Node3D
-var player_cell := Vector2i.ZERO   # posizione sulla griglia (colonna, riga)
-var goal_cell := Vector2i.ZERO
-var moving := false                # true mentre l'animazione del passo è in corso
+# Tutto quello che serve per un'isola con il suo animale, raccolto in un oggetto solo
+class Walker:
+	var rows: Array
+	var origin: Vector3
+	var cell := Vector2i.ZERO
+	var goal := Vector2i.ZERO
+	var node: Node3D
+	var anim: AnimationPlayer
+
+var walkers: Array[Walker] = []
+var moving := false
 
 func _ready() -> void:
-	build_island(LEVEL_A, Vector3.ZERO)
-	player = place(PET, cell_to_world(player_cell), PLAYER_SCALE)
-	print_animations(player)
+	walkers.append(build_island(LEVEL_A, Vector3.ZERO, FLOOR_SUMMER, PET_A))
+	walkers.append(build_island(LEVEL_B, ISLAND_B_ORIGIN, FLOOR_WINTER, PET_B))
 
-func build_island(rows: Array, origin: Vector3) -> void:
+func build_island(rows: Array, origin: Vector3, floor_scene: PackedScene, pet: PackedScene) -> Walker:
+	var w := Walker.new()
+	w.rows = rows
+	w.origin = origin
 	for y in rows.size():
 		var row: String = rows[y]
 		for x in row.length():
-			var c := row[x]
 			var pos := origin + Vector3(x * TILE, 0, y * TILE)
-			place(FLOOR_SUMMER, pos, 0.5)
+			place(floor_scene, pos, 0.5)
 			var top := pos + Vector3(0, 0.5, 0)
-			match c:
+			match row[x]:
 				"#": place(WALL, top)
 				"G":
 					place(GOAL, top, 1.5)
-					goal_cell = Vector2i(x, y)
-				"P": player_cell = Vector2i(x, y)
+					w.goal = Vector2i(x, y)
+				"P": w.cell = Vector2i(x, y)
+	w.node = place(pet, cell_to_world(w, w.cell), PLAYER_SCALE)
+	w.anim = w.node.find_children("*", "AnimationPlayer", true, false)[0]
+	w.anim.play("static")
+	return w
 
 func place(scene: PackedScene, pos: Vector3, s := 1.0) -> Node3D:
 	var obj := scene.instantiate() as Node3D
@@ -49,22 +71,20 @@ func place(scene: PackedScene, pos: Vector3, s := 1.0) -> Node3D:
 	add_child(obj)
 	return obj
 
-# Da casella della griglia a posizione nel mondo 3D (sulla superficie del blocco)
-func cell_to_world(cell: Vector2i) -> Vector3:
-	return Vector3(cell.x * TILE, 0.5 + PLAYER_LIFT, cell.y * TILE)
+func cell_to_world(w: Walker, cell: Vector2i) -> Vector3:
+	return w.origin + Vector3(cell.x * TILE, 0.5 + PLAYER_LIFT, cell.y * TILE)
 
-# Si può entrare in questa casella?
-func is_free(cell: Vector2i) -> bool:
-	if cell.y < 0 or cell.y >= LEVEL_A.size():
-		return false  # fuori dall'isola, sopra o sotto
-	var row: String = LEVEL_A[cell.y]
+func is_free(w: Walker, cell: Vector2i) -> bool:
+	if cell.y < 0 or cell.y >= w.rows.size():
+		return false
+	var row: String = w.rows[cell.y]
 	if cell.x < 0 or cell.x >= row.length():
-		return false  # fuori dall'isola, a sinistra o a destra
+		return false
 	return row[cell.x] != "#"
 
 func _unhandled_input(event: InputEvent) -> void:
 	if moving:
-		return  # ignora i tasti finché il passo precedente non è finito
+		return
 	var dir := Vector2i.ZERO
 	if event.is_action_pressed("ui_up"):
 		dir = Vector2i(0, -1)
@@ -78,23 +98,31 @@ func _unhandled_input(event: InputEvent) -> void:
 		try_move(dir)
 
 func try_move(dir: Vector2i) -> void:
-	player.rotation.y = atan2(dir.x, dir.y)  # si gira comunque verso la direzione
-	var target := player_cell + dir
-	if not is_free(target):
+	var tween := create_tween().set_parallel(true)  # i due animali si muovono insieme
+	var anyone_moved := false
+	for i in walkers.size():
+		var w := walkers[i]
+		# il primo va dove dici tu, il secondo è il riflesso: sinistra e destra invertite
+		var d := dir if i == 0 else Vector2i(-dir.x, dir.y)
+		w.node.rotation.y = atan2(d.x, d.y)
+		var target := w.cell + d
+		if is_free(w, target):
+			w.cell = target
+			w.anim.play("walk")
+			tween.tween_property(w.node, "position", cell_to_world(w, target), MOVE_TIME)
+			anyone_moved = true
+	if not anyone_moved:
+		tween.kill()  # nessuno si è mosso: niente animazione
 		return
-	player_cell = target
 	moving = true
-	var tween := create_tween()
-	tween.tween_property(player, "position", cell_to_world(target), MOVE_TIME) \
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.finished.connect(_on_move_finished)
 
 func _on_move_finished() -> void:
 	moving = false
-	if player_cell == goal_cell:
+	var all_home := true
+	for w in walkers:
+		w.anim.play("static")
+		if w.cell != w.goal:
+			all_home = false
+	if all_home:
 		print("Vinto!")
-
-# Stampa le animazioni del modello, per sapere quali possiamo usare
-func print_animations(node: Node) -> void:
-	for ap in node.find_children("*", "AnimationPlayer", true, false):
-		print("Animazioni: ", ap.get_animation_list())
