@@ -1,21 +1,23 @@
 extends Node3D
 
-# Livello 1: l'isola B è lo specchio dell'isola A
-const LEVEL_A := [
-	"P...",
-	"....",
-	".#..",
-	"...G",
-]
-const LEVEL_B := [
-	"...P",
-	"....",
-	"..#.",
-	"G...",
+# Ogni livello: l'isola A (estate) e l'isola B (inverno, il riflesso)
+const LEVELS := [
+	{ # 1: il riflesso
+		"a": ["P...", "....", ".#..", "...G"],
+		"b": ["...P", "....", "..#.", "G..."],
+	},
+	{ # 2: una roccia ferma uno solo dei due
+		"a": ["P...", "....", "....", "...G"],
+		"b": ["...P", "....", "....", "#G.."],
+	},
+	{ # 3: usa rocce e bordi per riallinearli
+		"a": ["....", "..G.", "#...", "..P."],
+		"b": ["#..P", "....", "....", "..#G"],
+	},
 ]
 
 const TILE := 1.0
-const ISLAND_B_ORIGIN := Vector3(6, 0, 0)  # l'isola B sta 6 caselle più a destra
+const ISLAND_B_ORIGIN := Vector3(6, 0, 0)
 const PLAYER_SCALE := 0.5
 const PLAYER_LIFT := 0.15
 const MOVE_TIME := 0.15
@@ -27,7 +29,11 @@ const GOAL := preload("res://assets/kenney_platformer/models/flag.glb")
 const PET_A := preload("res://assets/cube_pets/animal-bunny.glb")
 const PET_B := preload("res://assets/cube_pets/animal-cat.glb")
 
-# Tutto quello che serve per un'isola con il suo animale, raccolto in un oggetto solo
+# "static" = la variabile sopravvive quando la scena viene ricaricata
+static var level_index := 0
+
+@export var message: Label  # la scritta al centro dello schermo
+
 class Walker:
 	var rows: Array
 	var origin: Vector3
@@ -38,11 +44,17 @@ class Walker:
 
 var walkers: Array[Walker] = []
 var moving := false
-var history: Array = []  # le posizioni di tutti, prima di ogni mossa
+var won := false
+var history: Array = []
 
 func _ready() -> void:
-	walkers.append(build_island(LEVEL_A, Vector3.ZERO, FLOOR_SUMMER, PET_A))
-	walkers.append(build_island(LEVEL_B, ISLAND_B_ORIGIN, FLOOR_WINTER, PET_B))
+	var level: Dictionary = LEVELS[level_index]
+	walkers.append(build_island(level["a"], Vector3.ZERO, FLOOR_SUMMER, PET_A))
+	walkers.append(build_island(level["b"], ISLAND_B_ORIGIN, FLOOR_WINTER, PET_B))
+	show_message("Level %d" % (level_index + 1))
+	await get_tree().create_timer(1.2).timeout
+	if not won:
+		message.hide()
 
 func build_island(rows: Array, origin: Vector3, floor_scene: PackedScene, pet: PackedScene) -> Walker:
 	var w := Walker.new()
@@ -83,10 +95,16 @@ func is_free(w: Walker, cell: Vector2i) -> bool:
 		return false
 	return row[cell.x] != "#"
 
+func show_message(text: String) -> void:
+	message.text = text
+	message.show()
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("restart"):
 		get_tree().reload_current_scene()
 		return
+	if won:
+		return  # livello finito: ignora le frecce
 	if event.is_action_pressed("undo") and not moving:
 		undo()
 		return
@@ -106,11 +124,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func try_move(dir: Vector2i) -> void:
 	var before := snapshot()
-	var tween := create_tween().set_parallel(true)  # i due animali si muovono insieme
+	var tween := create_tween().set_parallel(true)
 	var anyone_moved := false
 	for i in walkers.size():
 		var w := walkers[i]
-		# il primo va dove dici tu, il secondo è il riflesso: sinistra e destra invertite
 		var d := dir if i == 0 else Vector2i(-dir.x, dir.y)
 		w.node.rotation.y = atan2(d.x, d.y)
 		var target := w.cell + d
@@ -120,7 +137,7 @@ func try_move(dir: Vector2i) -> void:
 			tween.tween_property(w.node, "position", cell_to_world(w, target), MOVE_TIME)
 			anyone_moved = true
 	if not anyone_moved:
-		tween.kill()  # nessuno si è mosso: niente animazione
+		tween.kill()
 		return
 	moving = true
 	history.push_back(before)
@@ -134,9 +151,19 @@ func _on_move_finished() -> void:
 		if w.cell != w.goal:
 			all_home = false
 	if all_home:
-		print("Vinto!")
+		win()
 
-# Una "fotografia" delle posizioni di tutti gli animali
+func win() -> void:
+	won = true
+	if level_index + 1 < LEVELS.size():
+		show_message("Level complete!")
+		await get_tree().create_timer(1.5).timeout
+		level_index += 1
+		get_tree().reload_current_scene()
+	else:
+		show_message("You finished every level!\nPress R to play again")
+		level_index = 0
+
 func snapshot() -> Array:
 	var cells := []
 	for w in walkers:
