@@ -38,6 +38,7 @@ class Walker:
 
 var walkers: Array[Walker] = []
 var moving := false
+var history: Array = []  # le posizioni di tutti, prima di ogni mossa
 
 func _ready() -> void:
 	walkers.append(build_island(LEVEL_A, Vector3.ZERO, FLOOR_SUMMER, PET_A))
@@ -83,6 +84,12 @@ func is_free(w: Walker, cell: Vector2i) -> bool:
 	return row[cell.x] != "#"
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("restart"):
+		get_tree().reload_current_scene()
+		return
+	if event.is_action_pressed("undo") and not moving:
+		undo()
+		return
 	if moving:
 		return
 	var dir := Vector2i.ZERO
@@ -98,6 +105,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		try_move(dir)
 
 func try_move(dir: Vector2i) -> void:
+	var before := snapshot()
 	var tween := create_tween().set_parallel(true)  # i due animali si muovono insieme
 	var anyone_moved := false
 	for i in walkers.size():
@@ -115,6 +123,7 @@ func try_move(dir: Vector2i) -> void:
 		tween.kill()  # nessuno si è mosso: niente animazione
 		return
 	moving = true
+	history.push_back(before)
 	tween.finished.connect(_on_move_finished)
 
 func _on_move_finished() -> void:
@@ -126,3 +135,18 @@ func _on_move_finished() -> void:
 			all_home = false
 	if all_home:
 		print("Vinto!")
+
+# Una "fotografia" delle posizioni di tutti gli animali
+func snapshot() -> Array:
+	var cells := []
+	for w in walkers:
+		cells.append(w.cell)
+	return cells
+
+func undo() -> void:
+	if history.is_empty():
+		return
+	var cells: Array = history.pop_back()
+	for i in walkers.size():
+		walkers[i].cell = cells[i]
+		walkers[i].node.position = cell_to_world(walkers[i], cells[i])
