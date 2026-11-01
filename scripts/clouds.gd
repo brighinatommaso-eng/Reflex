@@ -24,7 +24,7 @@ func _ready() -> void:
 	cloud_mat.roughness = 1.0
 	cloud_mat.disable_receive_shadows = true  # le nuvole non ricevono ombre
 	cloud_mat.rim_enabled = true
-	cloud_mat.rim = 0.6        # quanto schiarire i bordi
+	cloud_mat.rim = 0.3        # quanto schiarire i bordi
 	cloud_mat.rim_tint = 0.3   # 0 = bordo bianco, 1 = bordo del colore della nuvola
 	for i in count:
 		var angle := rng.randf() * TAU
