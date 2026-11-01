@@ -1,0 +1,13 @@
+# Normalize line endings (Godot files are text)
+* text=auto eol=lf
+
+# Binary assets
+*.png binary
+*.webp binary
+*.jpg binary
+*.wav binary
+*.ogg binary
+*.mp3 binary
+*.glb binary
+*.ttf binary
+*.otf binary
