@@ -16,7 +16,9 @@ const LEVELS := [
 ]
 
 const TILE := 1.0
-const ISLAND_B_ORIGIN := Vector3(6, 0, 0)
+const GAP := 2  # caselle vuote tra le due isole
+const CAMERA_DIR := Vector3(-0.4545, -0.766, -0.4545)  # dove guarda la telecamera (rotazione -50, 45)
+const UNDER_CELL := 0.5  # lato dei blocchetti dell'iceberg (mezzo metro)
 const PLAYER_SCALE := 0.5
 const PLAYER_LIFT := 0.15
 const MOVE_TIME := 0.15
@@ -25,10 +27,13 @@ const FLOOR_SUMMER := preload("res://assets/kaykit_blockbits/models/dirt_with_gr
 const FLOOR_WINTER := preload("res://assets/kaykit_blockbits/models/dirt_with_snow.gltf")
 const WALL := preload("res://assets/kenney_platformer/models/rocks.glb")
 const GOAL := preload("res://assets/kenney_platformer/models/flag.glb")
+const DIRT := preload("res://assets/kaykit_blockbits/models/dirt.gltf")
+const STONE := preload("res://assets/kaykit_blockbits/models/stone.gltf")
 
 @export var message: Label
 @export var tutorial: Control
 @export var level_map: Control
+@export var camera: Camera3D
 
 class Walker:
 	var rows: Array
@@ -45,8 +50,12 @@ var history: Array = []
 
 func _ready() -> void:
 	var level: Dictionary = LEVELS[Game.level_index]
-	walkers.append(build_island(level["a"], Vector3.ZERO, FLOOR_SUMMER, load(Game.pet_a)))
-	walkers.append(build_island(level["b"], ISLAND_B_ORIGIN, FLOOR_WINTER, load(Game.pet_b)))
+	var a: Array = level["a"]
+	var b: Array = level["b"]
+	var width: int = (a[0] as String).length()
+	walkers.append(build_island(a, Vector3.ZERO, FLOOR_SUMMER, load(Game.pet_a)))
+	walkers.append(build_island(b, Vector3(width + GAP, 0, 0), FLOOR_WINTER, load(Game.pet_b)))
+	frame_camera(width * 2 + GAP, a.size())
 	level_map.level_chosen.connect(_on_level_chosen)
 	message.hide()
 	tutorial.hide()
@@ -57,6 +66,12 @@ func _ready() -> void:
 		tutorial.show()
 	else:
 		intro_message()
+
+# Le isole cambiano dimensione da una sezione all'altra: la telecamera si adatta
+func frame_camera(total_width: int, depth: int) -> void:
+	var center := Vector3((total_width - 1) / 2.0, -1.0, (depth - 1) / 2.0)
+	camera.position = center - CAMERA_DIR * 14.0
+	camera.size = 1.2 * total_width
 
 func intro_message() -> void:
 	show_message("Level %d" % (Game.level_index + 1))
@@ -80,10 +95,77 @@ func build_island(rows: Array, origin: Vector3, floor_scene: PackedScene, pet: P
 					place(GOAL, top, 1.5)
 					w.goal = Vector2i(x, y)
 				"P": w.cell = Vector2i(x, y)
+	add_underside(origin, rows)
 	w.node = place(pet, cell_to_world(w, w.cell), PLAYER_SCALE)
 	w.anim = w.node.find_children("*", "AnimationPlayer", true, false)[0]
 	w.anim.play("static")
 	return w
+
+# La parte sotto l'isola: una montagna a testa in giù che finisce con una punta
+func add_underside(origin: Vector3, rows: Array) -> void:
+	var width: int = (rows[0] as String).length()
+	var depth_rows: int = rows.size()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(origin)  # ogni isola ha la sua forma, sempre uguale
+	var cx := (width - 1) / 2.0
+	var cz := (depth_rows - 1) / 2.0
+	var layers := int(maxi(width, depth_rows) * 2.5)  # quanti strati verso il basso
+	var cols := int(width / UNDER_CELL)
+	var lines := int(depth_rows / UNDER_CELL)
+	var drift := Vector2.ZERO  # la punta si sposta un po', ma non troppo
+	var dirt: Array[Transform3D] = []
+	var stone: Array[Transform3D] = []
+	for k in layers:
+		# scendendo, l'ovale si restringe in modo regolare fino a zero: la punta
+		var shrink := 1.05 * (1.0 - float(k + 1) / layers)
+		drift.x = clampf(drift.x + rng.randf_range(-0.12, 0.12), -0.6, 0.6)
+		drift.y = clampf(drift.y + rng.randf_range(-0.12, 0.12), -0.6, 0.6)
+		var y := -0.5 - UNDER_CELL * (k + 0.5)
+		var placed := 0
+		var closest := Vector3.ZERO     # il blocchetto più vicino al centro di questo strato
+		var closest_dist := INF
+		for i in cols:
+			for j in lines:
+				var px := -0.5 + UNDER_CELL * (i + 0.5)
+				var pz := -0.5 + UNDER_CELL * (j + 0.5)
+				var offset := Vector2(px - cx - drift.x, pz - cz - drift.y)
+				if offset.length_squared() < closest_dist:
+					closest_dist = offset.length_squared()
+					closest = Vector3(px, y, pz)
+				if shrink < 0.05:
+					continue
+				# dentro l'ovale? (bordi irregolari in alto, sempre più regolari verso la punta)
+				var dx := offset.x / (width / 2.0 * shrink)
+				var dz := offset.y / (depth_rows / 2.0 * shrink)
+				if dx * dx + dz * dz <= 1.0 + rng.randf_range(-0.3, 0.3) * shrink:
+					var t := block_transform(origin + Vector3(px, y, pz))
+					if k < 2:
+						dirt.append(t)
+					else:
+						stone.append(t)
+					placed += 1
+		if placed == 0:
+			stone.append(block_transform(origin + closest))  # la punta: almeno un blocchetto per strato
+	add_multimesh(DIRT, dirt)
+	add_multimesh(STONE, stone)
+
+func block_transform(pos: Vector3) -> Transform3D:
+	return Transform3D(Basis.from_scale(Vector3.ONE * UNDER_CELL / 2.0), pos)
+
+# Disegna tanti blocchi uguali in un colpo solo (molto più veloce di tanti nodi)
+func add_multimesh(scene: PackedScene, transforms: Array[Transform3D]) -> void:
+	var source := scene.instantiate()
+	var mesh: Mesh = (source.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D).mesh
+	source.free()
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = mesh
+	mm.instance_count = transforms.size()
+	for i in transforms.size():
+		mm.set_instance_transform(i, transforms[i])
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	add_child(mmi)
 
 func place(scene: PackedScene, pos: Vector3, s := 1.0) -> Node3D:
 	var obj := scene.instantiate() as Node3D
@@ -179,8 +261,8 @@ func win() -> void:
 	show_message("Level complete!")
 	await get_tree().create_timer(1.0).timeout
 	message.hide()
-	var last := Game.level_index + 1 >= LEVELS.size()
-	var heading := "You finished every level!" if last else "Level %d complete!" % (Game.level_index + 1)
+	var last: bool = Game.level_index + 1 >= LEVELS.size()
+	var heading: String = "You finished every level!" if last else "Level %d complete!" % (Game.level_index + 1)
 	level_map.open(LEVELS.size(), Game.best, Game.level_index, heading)
 
 func _on_level_chosen(index: int) -> void:
