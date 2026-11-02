@@ -1,6 +1,5 @@
 extends Node3D
 
-# Ogni livello: l'isola A (estate) e l'isola B (inverno, il riflesso)
 const LEVELS := [
 	{ # 1: il riflesso
 		"a": ["P...", "....", ".#..", "...G"],
@@ -27,10 +26,9 @@ const FLOOR_WINTER := preload("res://assets/kaykit_blockbits/models/dirt_with_sn
 const WALL := preload("res://assets/kenney_platformer/models/rocks.glb")
 const GOAL := preload("res://assets/kenney_platformer/models/flag.glb")
 
-static var level_index := 0
-
-@export var message: Label      # la scritta al centro dello schermo
-@export var tutorial: Control   # il pannello con le istruzioni
+@export var message: Label
+@export var tutorial: Control
+@export var level_map: Control
 
 class Walker:
 	var rows: Array
@@ -46,18 +44,22 @@ var won := false
 var history: Array = []
 
 func _ready() -> void:
-	var level: Dictionary = LEVELS[level_index]
+	var level: Dictionary = LEVELS[Game.level_index]
 	walkers.append(build_island(level["a"], Vector3.ZERO, FLOOR_SUMMER, load(Game.pet_a)))
 	walkers.append(build_island(level["b"], ISLAND_B_ORIGIN, FLOOR_WINTER, load(Game.pet_b)))
-	if level_index == 0 and not Game.tutorial_seen:
-		message.hide()
+	level_map.level_chosen.connect(_on_level_chosen)
+	message.hide()
+	tutorial.hide()
+	if Game.open_map_on_start:
+		Game.open_map_on_start = false
+		level_map.open(LEVELS.size(), Game.best, Game.level_index, "Choose a level")
+	elif Game.level_index == 0 and not Game.tutorial_seen:
 		tutorial.show()
 	else:
-		tutorial.hide()
 		intro_message()
 
 func intro_message() -> void:
-	show_message("Level %d" % (level_index + 1))
+	show_message("Level %d" % (Game.level_index + 1))
 	await get_tree().create_timer(1.2).timeout
 	if not won:
 		message.hide()
@@ -109,11 +111,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		get_tree().change_scene_to_file("res://scenes/select.tscn")
 		return
+	if level_map.visible:
+		return  # la mappa gestisce da sola mouse, frecce e Invio
 	if tutorial.visible:
-		# finché il tutorial è aperto, conta solo Invio
 		if event.is_action_pressed("ui_accept"):
 			tutorial.hide()
 			Game.tutorial_seen = true
+			Game.save_progress()
 			intro_message()
 		return
 	if event.is_action_pressed("restart"):
@@ -171,14 +175,17 @@ func _on_move_finished() -> void:
 
 func win() -> void:
 	won = true
-	if level_index + 1 < LEVELS.size():
-		show_message("Level complete!")
-		await get_tree().create_timer(1.5).timeout
-		level_index += 1
-		get_tree().reload_current_scene()
-	else:
-		show_message("You finished every level!\nPress R to play again")
-		level_index = 0
+	Game.complete_level(Game.level_index)
+	show_message("Level complete!")
+	await get_tree().create_timer(1.0).timeout
+	message.hide()
+	var last := Game.level_index + 1 >= LEVELS.size()
+	var heading := "You finished every level!" if last else "Level %d complete!" % (Game.level_index + 1)
+	level_map.open(LEVELS.size(), Game.best, Game.level_index, heading)
+
+func _on_level_chosen(index: int) -> void:
+	Game.level_index = index
+	get_tree().reload_current_scene()
 
 func snapshot() -> Array:
 	var cells := []

@@ -81,4 +81,5 @@ func pick() -> void:
 		update_view()
 	else:
 		Game.pet_b = pet_path(cursor)
+		Game.open_map_on_start = true
 		get_tree().change_scene_to_file("res://scenes/main.tscn")
