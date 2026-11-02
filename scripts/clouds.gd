@@ -24,8 +24,8 @@ func _ready() -> void:
 	cloud_mat.roughness = 1.0
 	cloud_mat.disable_receive_shadows = true  # le nuvole non ricevono ombre
 	cloud_mat.rim_enabled = true
-	cloud_mat.rim = 0.3        # quanto schiarire i bordi
-	cloud_mat.rim_tint = 0.3   # 0 = bordo bianco, 1 = bordo del colore della nuvola
+	cloud_mat.rim = 0.6        # quanto schiarire i bordi
+	cloud_mat.rim_tint = 0.3  # 0 = bordo bianco, 1 = bordo del colore della nuvola
 	for i in count:
 		var angle := rng.randf() * TAU
 		var r := rng.randf_range(min_radius, max_radius)
@@ -36,7 +36,8 @@ func make_cloud(pos: Vector3) -> Node3D:
 	var model: PackedScene = CLOUD_MODELS[rng.randi() % CLOUD_MODELS.size()]
 	var cloud := model.instantiate() as Node3D
 	cloud.position = pos
-	cloud.rotation.y = rng.randf() * TAU
+	# girata verso la telecamera (45°) e inclinata all'indietro, per mostrare il profilo da cartone
+	cloud.rotation = Vector3(deg_to_rad(-40), deg_to_rad(45) + rng.randf_range(-0.3, 0.3), 0)
 	var s := cloud_scale * rng.randf_range(0.7, 1.2)
 	cloud.scale = Vector3(s * stretch, s, s)
 	for mesh in cloud.find_children("*", "MeshInstance3D", true, false):

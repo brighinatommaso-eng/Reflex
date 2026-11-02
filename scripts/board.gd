@@ -26,6 +26,15 @@ const LEVELS := [
 		"a": ["....", ".##.", "G.#P", "...."],
 		"b": ["#.P.", ".#..", "G.#.", "...."],
 	},
+	# ─── Livello di PROVA per i dislivelli (lo sostituiremo con la sezione 2) ───
+	{ # "ha"/"hb" = altezza di ogni casella, da 0 a 3
+		"a": ["P...", "....", "....", "...G"],
+		"ha": ["0000", "0120", "0230", "0000"],
+		"b": ["...P", "....", "....", "G..."],
+		"hb": ["0000", "0210", "0320", "0000"],
+		"tip": ["New: heights!", "No jump button: just walk with [img=36x36]res://assets/input_prompts/Default/keyboard_arrows.png[/img]\nand your friends [b]hop up by themselves[/b].\n\nThey can climb [b]one step[/b] at a time,\nand jump down from [b]any height[/b]."],
+
+	},
 ]
 
 const TILE := 1.0
@@ -55,6 +64,7 @@ class Walker:
 	var goal := Vector2i.ZERO
 	var node: Node3D
 	var anim: AnimationPlayer
+	var heights: Array = []  # vuoto = isola tutta in piano
 
 var walkers: Array[Walker] = []
 var moving := false
@@ -66,8 +76,8 @@ func _ready() -> void:
 	var a: Array = level["a"]
 	var b: Array = level["b"]
 	var width: int = (a[0] as String).length()
-	walkers.append(build_island(a, Vector3.ZERO, FLOOR_SUMMER, load(Game.pet_a)))
-	walkers.append(build_island(b, Vector3(width + GAP, 0, 0), FLOOR_WINTER, load(Game.pet_b)))
+	walkers.append(build_island(a, level.get("ha", []), Vector3.ZERO, FLOOR_SUMMER, load(Game.pet_a)))
+	walkers.append(build_island(b, level.get("hb", []), Vector3(width + GAP, 0, 0), FLOOR_WINTER, load(Game.pet_b)))
 	frame_camera(width * 2 + GAP, a.size())
 	level_map.level_chosen.connect(_on_level_chosen)
 	message.hide()
@@ -77,6 +87,8 @@ func _ready() -> void:
 		level_map.open(LEVELS.size(), Game.best, Game.level_index, "Choose a level")
 	elif Game.level_index == 0 and not Game.tutorial_seen:
 		tutorial.show()
+	elif level.has("tip") and not Game.tips_seen.has(Game.level_index):
+		show_tip(level["tip"])
 	else:
 		intro_message()
 
@@ -92,16 +104,26 @@ func intro_message() -> void:
 	if not won:
 		message.hide()
 
-func build_island(rows: Array, origin: Vector3, floor_scene: PackedScene, pet: PackedScene) -> Walker:
+# Mostra un suggerimento nello stesso pannello del tutorial: tip = [titolo, testo]
+func show_tip(tip: Array) -> void:
+	var label := tutorial.get_child(0) as RichTextLabel
+	label.text = "[center][b][font_size=44]%s[/font_size][/b]\n\n%s\n\n[i]Press[/i] [img=40x40]res://assets/input_prompts/Default/keyboard_enter.png[/img] [i]to start[/i][/center]" % [tip[0], tip[1]]
+	tutorial.show()
+
+func build_island(rows: Array, heights: Array, origin: Vector3, floor_scene: PackedScene, pet: PackedScene) -> Walker:
 	var w := Walker.new()
 	w.rows = rows
+	w.heights = heights
 	w.origin = origin
 	for y in rows.size():
 		var row: String = rows[y]
 		for x in row.length():
 			var pos := origin + Vector3(x * TILE, 0, y * TILE)
-			place(floor_scene, pos, 0.5)
-			var top := pos + Vector3(0, 0.5, 0)
+			var h := height_at(w, Vector2i(x, y))
+			for k in h:
+				place(DIRT, pos + Vector3(0, k, 0), 0.5)  # la colonna sotto una casella alta
+			place(floor_scene, pos + Vector3(0, h, 0), 0.5)
+			var top := pos + Vector3(0, 0.5 + h, 0)
 			match row[x]:
 				"#": place(WALL, top)
 				"G":
@@ -188,7 +210,20 @@ func place(scene: PackedScene, pos: Vector3, s := 1.0) -> Node3D:
 	return obj
 
 func cell_to_world(w: Walker, cell: Vector2i) -> Vector3:
-	return w.origin + Vector3(cell.x * TILE, 0.5 + PLAYER_LIFT, cell.y * TILE)
+	return w.origin + Vector3(cell.x * TILE, 0.5 + PLAYER_LIFT + height_at(w, cell), cell.y * TILE)
+
+# L'altezza di una casella (0 = terra). Se il livello non ha "ha"/"hb", è tutto in piano.
+func height_at(w: Walker, cell: Vector2i) -> int:
+	if w.heights.is_empty():
+		return 0
+	var row: String = w.heights[cell.y]
+	return row[cell.x].to_int()
+
+# Si può fare questo passo? Dentro l'isola, niente roccia, e al massimo 1 gradino in salita
+func can_step(w: Walker, from: Vector2i, to: Vector2i) -> bool:
+	if not is_free(w, to):
+		return false
+	return height_at(w, to) - height_at(w, from) <= 1
 
 func is_free(w: Walker, cell: Vector2i) -> bool:
 	if cell.y < 0 or cell.y >= w.rows.size():
@@ -211,7 +246,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if tutorial.visible:
 		if event.is_action_pressed("ui_accept"):
 			tutorial.hide()
-			Game.tutorial_seen = true
+			if Game.level_index == 0:
+				Game.tutorial_seen = true
+			else:
+				Game.tips_seen.append(Game.level_index)  # questo suggerimento non ricompare più
 			Game.save_progress()
 			intro_message()
 		return
@@ -246,10 +284,18 @@ func try_move(dir: Vector2i) -> void:
 		var d := dir if i == 0 else Vector2i(-dir.x, dir.y)
 		w.node.rotation.y = atan2(d.x, d.y)
 		var target := w.cell + d
-		if is_free(w, target):
+		if can_step(w, w.cell, target):
+			var from := w.node.position
+			var to := cell_to_world(w, target)
+			var climb := maxf(0.0, to.y - from.y)  # quanto sale (0 se è in piano o scende)
+			var jump := 0.25 + climb               # altezza dell'arco sopra il punto più alto
+			var duration := MOVE_TIME * (1.6 if from.y != to.y else 1.0)
 			w.cell = target
 			w.anim.play("walk")
-			tween.tween_property(w.node, "position", cell_to_world(w, target), MOVE_TIME)
+			# p va da 0 a 1: avanza in linea retta e ci aggiunge un arco (sin va 0 → 1 → 0)
+			tween.tween_method(
+				func(p: float): w.node.position = from.lerp(to, p) + Vector3.UP * sin(p * PI) * jump,
+				0.0, 1.0, duration)
 			anyone_moved = true
 	if not anyone_moved:
 		tween.kill()

@@ -43,6 +43,7 @@ center = Vector3(4.5, 0, 1.5)
 min_radius = 8.0
 max_radius = 14.0
 cloud_scale = 0.5
+stretch = 1.0
 
 [node name="UI" type="CanvasLayer" parent="." unique_id=838377416]
 
@@ -100,7 +101,7 @@ theme_override_font_sizes/bold_font_size = 28
 theme_override_font_sizes/italics_font_size = 24
 bbcode_enabled = true
 text = "[center][b][font_size=44]Welcome to Reflex![/font_size][/b]
-Two friends, two islands, one mirror.
+Two friends, two islands, one invisible mirror.
 
 Every move you make, your reflection makes [b]the opposite way[/b].
 A rock stops one of them, but not the other. Use that!

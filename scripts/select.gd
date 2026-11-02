@@ -26,7 +26,9 @@ func _ready() -> void:
 		pet.position = pos
 		add_child(pet)
 		pets.append(pet)
-		anims.append(pet.find_children("*", "AnimationPlayer", true, false)[0])
+		var ap: AnimationPlayer = pet.find_children("*", "AnimationPlayer", true, false)[0]
+		ap.get_animation("walk").loop_mode = Animation.LOOP_LINEAR  # cammina all'infinito
+		anims.append(ap)
 	update_view()
 
 func pet_path(i: int) -> String:
