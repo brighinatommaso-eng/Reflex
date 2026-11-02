@@ -5,26 +5,38 @@ const LEVELS := [
 	{ # 1 · 6 mosse: il riflesso
 		"a": ["P...", "....", ".#..", "...G"],
 		"b": ["...P", "....", "..#.", "G..."],
+		"par": 6,    # mosse minime (da check_levels.py)
+		"time": 15,   # secondi per la terza stella
 	},
 	{ # 2 · 6 mosse: una roccia ferma uno solo dei due
 		"a": ["P...", "....", "....", "...G"],
 		"b": ["...P", "....", "....", "#G.."],
+		"par": 6,    # mosse minime (da check_levels.py)
+		"time": 15,   # secondi per la terza stella
 	},
 	{ # 3 · 9 mosse: usa rocce e bordi per riallinearli
 		"a": ["....", "..G.", "#...", "..P."],
 		"b": ["#..P", "....", "....", "..#G"],
+		"par": 9,    # mosse minime (da check_levels.py)
+		"time": 25,   # secondi per la terza stella
 	},
 	{ # 4 · 10 mosse
 		"a": ["....", "...#", "P..#", ".G.."],
 		"b": ["..G.", "#...", "....", "#P.."],
+		"par": 10,    # mosse minime (da check_levels.py)
+		"time": 30,   # secondi per la terza stella
 	},
 	{ # 5 · 12 mosse
 		"a": [".P..", "..##", ".G..", "...."],
 		"b": [".#..", ".#.G", "P...", "...."],
+		"par": 12,    # mosse minime (da check_levels.py)
+		"time": 35,   # secondi per la terza stella
 	},
 	{ # 6 · 14 mosse
 		"a": ["....", ".##.", "G.#P", "...."],
 		"b": ["#.P.", ".#..", "G.#.", "...."],
+		"par": 14,    # mosse minime (da check_levels.py)
+		"time": 40,   # secondi per la terza stella
 	},
 	# ─── Livello di PROVA per i dislivelli (lo sostituiremo con la sezione 2) ───
 	{ # "ha"/"hb" = altezza di ogni casella, da 0 a 3
@@ -32,8 +44,17 @@ const LEVELS := [
 		"ha": ["0000", "0120", "0230", "0000"],
 		"b": ["...P", "....", "....", "G..."],
 		"hb": ["0000", "0210", "0320", "0000"],
+		"par": 6,
+		"time": 20,
 		"tip": ["New: heights!", "No jump button: just walk with [img=36x36]res://assets/input_prompts/Default/keyboard_arrows.png[/img]\nand your friends [b]hop up by themselves[/b].\n\nThey can climb [b]one step[/b] at a time,\nand jump down from [b]any height[/b]."],
 
+	},
+	# ─── Livello di PROVA per buchi e ghiaccio ───
+	{ # O = buco, ~ = ghiaccio
+		"a": ["P.~.", "~~~.", "..O.", "...G"],
+		"b": [".~.P", ".~~~", ".O..", "G..."],
+		"par": 5,
+		"time": 20,
 	},
 ]
 
@@ -51,11 +72,14 @@ const WALL := preload("res://assets/kenney_platformer/models/rocks.glb")
 const GOAL := preload("res://assets/kenney_platformer/models/flag.glb")
 const DIRT := preload("res://assets/kaykit_blockbits/models/dirt.gltf")
 const STONE := preload("res://assets/kaykit_blockbits/models/stone.gltf")
+const ICE := preload("res://assets/kaykit_blockbits/models/glass.gltf")
 
 @export var message: Label
 @export var tutorial: Control
 @export var level_map: Control
 @export var camera: Camera3D
+@export var timer_label: Label   # il cronometro in alto a sinistra
+@export var results: Control     # il pannello di riepilogo a fine livello
 
 class Walker:
 	var rows: Array
@@ -65,11 +89,14 @@ class Walker:
 	var node: Node3D
 	var anim: AnimationPlayer
 	var heights: Array = []  # vuoto = isola tutta in piano
+	var fell := false        # è caduto in un buco?
 
 var walkers: Array[Walker] = []
 var moving := false
 var won := false
 var history: Array = []
+var lost := false      # un animale è caduto in un buco
+var elapsed := 0.0     # secondi passati in questo livello
 
 func _ready() -> void:
 	var level: Dictionary = LEVELS[Game.level_index]
@@ -80,8 +107,10 @@ func _ready() -> void:
 	walkers.append(build_island(b, level.get("hb", []), Vector3(width + GAP, 0, 0), FLOOR_WINTER, load(Game.pet_b)))
 	frame_camera(width * 2 + GAP, a.size())
 	level_map.level_chosen.connect(_on_level_chosen)
+	results.get_node("VBox/Continue").pressed.connect(_on_continue)
 	message.hide()
 	tutorial.hide()
+	results.hide()
 	if Game.open_map_on_start:
 		Game.open_map_on_start = false
 		level_map.open(LEVELS.size(), Game.best, Game.level_index, "Choose a level")
@@ -91,6 +120,19 @@ func _ready() -> void:
 		show_tip(level["tip"])
 	else:
 		intro_message()
+
+# Il cronometro: conta solo mentre stai davvero giocando
+func _process(delta: float) -> void:
+	if is_playing():
+		elapsed += delta
+	timer_label.text = format_time(elapsed)
+
+func is_playing() -> bool:
+	return not won and not lost and not tutorial.visible and not level_map.visible and not results.visible
+
+# 75.4 secondi -> "1:15"
+func format_time(t: float) -> String:
+	return "%d:%02d" % [int(t / 60.0), int(t) % 60]
 
 # Le isole cambiano dimensione da una sezione all'altra: la telecamera si adatta
 func frame_camera(total_width: int, depth: int) -> void:
@@ -118,11 +160,13 @@ func build_island(rows: Array, heights: Array, origin: Vector3, floor_scene: Pac
 	for y in rows.size():
 		var row: String = rows[y]
 		for x in row.length():
+			if row[x] == "O":
+				continue  # buco: niente pavimento, si vede il cielo
 			var pos := origin + Vector3(x * TILE, 0, y * TILE)
 			var h := height_at(w, Vector2i(x, y))
 			for k in h:
 				place(DIRT, pos + Vector3(0, k, 0), 0.5)  # la colonna sotto una casella alta
-			place(floor_scene, pos + Vector3(0, h, 0), 0.5)
+			place(ICE if row[x] == "~" else floor_scene, pos + Vector3(0, h, 0), 0.5)
 			var top := pos + Vector3(0, 0.5 + h, 0)
 			match row[x]:
 				"#": place(WALL, top)
@@ -163,6 +207,8 @@ func add_underside(origin: Vector3, rows: Array) -> void:
 			for j in lines:
 				var px := -0.5 + UNDER_CELL * (i + 0.5)
 				var pz := -0.5 + UNDER_CELL * (j + 0.5)
+				if is_hole(rows, px, pz):
+					continue  # sotto un buco l'iceberg è vuoto: si vede il cielo attraverso
 				var offset := Vector2(px - cx - drift.x, pz - cz - drift.y)
 				if offset.length_squared() < closest_dist:
 					closest_dist = offset.length_squared()
@@ -183,6 +229,11 @@ func add_underside(origin: Vector3, rows: Array) -> void:
 			stone.append(block_transform(origin + closest))  # la punta: almeno un blocchetto per strato
 	add_multimesh(DIRT, dirt)
 	add_multimesh(STONE, stone)
+
+# Il blocchetto in (px, pz) sta sotto una casella "buco"?
+func is_hole(rows: Array, px: float, pz: float) -> bool:
+	var row: String = rows[roundi(pz)]
+	return row[roundi(px)] == "O"
 
 func block_transform(pos: Vector3) -> Transform3D:
 	return Transform3D(Basis.from_scale(Vector3.ONE * UNDER_CELL / 2.0), pos)
@@ -225,6 +276,23 @@ func can_step(w: Walker, from: Vector2i, to: Vector2i) -> bool:
 		return false
 	return height_at(w, to) - height_at(w, from) <= 1
 
+# Il carattere della casella: "." pavimento, "#" roccia, "O" buco, "~" ghiaccio...
+func tile(w: Walker, cell: Vector2i) -> String:
+	var row: String = w.rows[cell.y]
+	return row[cell.x]
+
+# Dove finisce un animale che prova a muoversi in direzione d:
+# un passo, poi se è sul ghiaccio continua a scivolare finché qualcosa lo ferma.
+func slide(w: Walker, d: Vector2i) -> Dictionary:
+	var cell := w.cell
+	if not can_step(w, cell, cell + d):
+		return {"cell": cell, "fell": false}
+	cell += d
+	# sul ghiaccio si continua dritti, ma mai in salita
+	while tile(w, cell) == "~" and is_free(w, cell + d) and height_at(w, cell + d) <= height_at(w, cell):
+		cell += d
+	return {"cell": cell, "fell": tile(w, cell) == "O"}
+
 func is_free(w: Walker, cell: Vector2i) -> bool:
 	if cell.y < 0 or cell.y >= w.rows.size():
 		return false
@@ -241,8 +309,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		get_tree().change_scene_to_file("res://scenes/select.tscn")
 		return
-	if level_map.visible:
-		return  # la mappa gestisce da sola mouse, frecce e Invio
+	if level_map.visible or results.visible:
+		return  # mappa e riepilogo gestiscono da soli mouse, frecce e Invio
 	if tutorial.visible:
 		if event.is_action_pressed("ui_accept"):
 			tutorial.hide()
@@ -261,7 +329,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("undo") and not moving:
 		undo()
 		return
-	if moving:
+	if lost or moving:
 		return
 	var dir := Vector2i.ZERO
 	if event.is_action_pressed("ui_up"):
@@ -283,14 +351,17 @@ func try_move(dir: Vector2i) -> void:
 		var w := walkers[i]
 		var d := dir if i == 0 else Vector2i(-dir.x, dir.y)
 		w.node.rotation.y = atan2(d.x, d.y)
-		var target := w.cell + d
-		if can_step(w, w.cell, target):
+		var result := slide(w, d)
+		var target: Vector2i = result["cell"]
+		if target != w.cell:
 			var from := w.node.position
 			var to := cell_to_world(w, target)
+			var steps := absi(target.x - w.cell.x) + absi(target.y - w.cell.y)
 			var climb := maxf(0.0, to.y - from.y)  # quanto sale (0 se è in piano o scende)
-			var jump := 0.25 + climb               # altezza dell'arco sopra il punto più alto
-			var duration := MOVE_TIME * (1.6 if from.y != to.y else 1.0)
+			var jump := (0.25 + climb) if steps == 1 else 0.0  # sul ghiaccio si scivola, non si salta
+			var duration := MOVE_TIME * (1.0 + 0.5 * (steps - 1)) * (1.6 if from.y != to.y else 1.0)
 			w.cell = target
+			w.fell = result["fell"]
 			w.anim.play("walk")
 			# p va da 0 a 1: avanza in linea retta e ci aggiunge un arco (sin va 0 → 1 → 0)
 			tween.tween_method(
@@ -306,20 +377,62 @@ func try_move(dir: Vector2i) -> void:
 
 func _on_move_finished() -> void:
 	moving = false
+	var anyone_fell := false
 	var all_home := true
 	for w in walkers:
 		w.anim.play("static")
+		if w.fell:
+			anyone_fell = true
+			fall(w)
 		if w.cell != w.goal:
 			all_home = false
-	if all_home:
+	if anyone_fell:
+		lost = true
+		show_message("Oh no! You fell!\nPress Z to undo, R to restart")
+	elif all_home:
 		win()
+
+# L'animale precipita nel buco, attraversa l'iceberg e sparisce nel cielo
+func fall(w: Walker) -> void:
+	var t := create_tween().set_parallel(true)
+	t.tween_property(w.node, "position:y", w.node.position.y - 15.0, 1.6) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)            # accelera come una vera caduta
+	t.tween_property(w.node, "rotation:y", w.node.rotation.y + TAU, 1.6)  # una piroetta mentre cade
+	t.tween_property(w.node, "scale", Vector3.ONE * PLAYER_SCALE * 0.6, 1.6) \
+		.set_delay(0.6)                                                   # si rimpicciolisce solo alla fine
 
 func win() -> void:
 	won = true
-	Game.complete_level(Game.level_index)
+	var level: Dictionary = LEVELS[Game.level_index]
+	var moves := history.size()  # ogni mossa riuscita è nella storia (e Z la toglie)
+	var stars := 1                                    # 1 stella: livello finito
+	if moves <= level.get("par", 0):
+		stars += 1                                    # 2 stelle: poche mosse
+	if elapsed <= level.get("time", 0):
+		stars += 1                                    # 3 stelle: abbastanza veloce
+	var new_record: bool = Game.complete_level(Game.level_index, elapsed, stars)
 	show_message("Level complete!")
 	await get_tree().create_timer(1.0).timeout
 	message.hide()
+	show_results(level, moves, stars, new_record)
+
+# Riempie il pannello di riepilogo e lo mostra
+func show_results(level: Dictionary, moves: int, stars: int, new_record: bool) -> void:
+	var box := results.get_node("VBox")
+	box.get_node("ResultTitle").text = "Level %d complete!" % (Game.level_index + 1)
+	box.get_node("MovesLabel").text = "Moves: %d   (best possible: %d)" % [moves, level.get("par", 0)]
+	box.get_node("TimeLabel").text = "Time: %s   (3rd star under %s)" % [format_time(elapsed), format_time(level.get("time", 0))]
+	var best: float = Game.best_times[Game.level_index]
+	box.get_node("BestLabel").text = ("New record! " if new_record else "Best: ") + format_time(best)
+	# stelle guadagnate dorate, le altre grigie e trasparenti
+	var star_nodes := box.get_node("Stars").get_children()
+	for i in star_nodes.size():
+		(star_nodes[i] as CanvasItem).modulate = Color("ffcc33") if i < stars else Color(1, 1, 1, 0.25)
+	results.show()
+	box.get_node("Continue").grab_focus()  # così basta premere Invio
+
+func _on_continue() -> void:
+	results.hide()
 	var last: bool = Game.level_index + 1 >= LEVELS.size()
 	var heading: String = "You finished every level!" if last else "Level %d complete!" % (Game.level_index + 1)
 	level_map.open(LEVELS.size(), Game.best, Game.level_index, heading)
@@ -337,7 +450,16 @@ func snapshot() -> Array:
 func undo() -> void:
 	if history.is_empty():
 		return
+	for t in get_tree().get_processed_tweens():
+		t.kill()  # ferma una caduta ancora in corso
 	var cells: Array = history.pop_back()
 	for i in walkers.size():
-		walkers[i].cell = cells[i]
-		walkers[i].node.position = cell_to_world(walkers[i], cells[i])
+		var w := walkers[i]
+		w.cell = cells[i]
+		w.fell = false
+		w.node.scale = Vector3.ONE * PLAYER_SCALE  # torna alla dimensione normale
+		w.node.position = cell_to_world(w, w.cell)
+		w.anim.play("static")
+	if lost:
+		lost = false
+		message.hide()

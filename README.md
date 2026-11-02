@@ -76,6 +76,7 @@ Third-party assets (models, sounds, music, fonts) are listed here along with the
 | [Platformer Kit](https://kenney.nl/assets/platformer-kit) | Kenney | CC0 1.0 |
 | [Cube Pets](https://kenney.nl/assets/cube-pets) | Kenney | CC0 1.0 |
 | [Input Prompts](https://kenney.nl/assets/input-prompts) | Kenney | CC0 1.0 |
+| [Game Icons](https://kenney.nl/assets/game-icons) (star) | Kenney | CC0 1.0 |
 | [Ultimate Platformer Pack](https://quaternius.itch.io/ultimate-platformer-pack) (clouds) | Quaternius | CC0 1.0 |
 
 ## Licence

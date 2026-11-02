@@ -4,6 +4,8 @@
 [ext_resource type="Script" uid="uid://jk5m4uxp78a6" path="res://scripts/clouds.gd" id="2_0wfyh"]
 [ext_resource type="StyleBox" uid="uid://balf4elmdw8sd" path="res://assets/ui/panel.tres" id="3_sugp2"]
 [ext_resource type="Script" uid="uid://uvnjjpibj3l6" path="res://scripts/level_map.gd" id="4_jyhfs"]
+[ext_resource type="Texture2D" uid="uid://bdcnsithkj2y" path="res://assets/ui/star.png" id="5_tbgi4"]
+[ext_resource type="StyleBox" uid="uid://5javxb762jpf" path="res://assets/ui/button_normal.tres" id="6_tefeu"]
 
 [sub_resource type="Environment" id="Environment_0quu1"]
 background_mode = 1
@@ -26,12 +28,14 @@ light_color = Color(1, 0.94509804, 0.8392157, 1)
 shadow_enabled = true
 shadow_blur = 2.0
 
-[node name="Board" type="Node3D" parent="." unique_id=1406624914 node_paths=PackedStringArray("message", "tutorial", "level_map", "camera")]
+[node name="Board" type="Node3D" parent="." unique_id=1406624914 node_paths=PackedStringArray("message", "tutorial", "level_map", "camera", "timer_label", "results")]
 script = ExtResource("1_o5qli")
 message = NodePath("../UI/Message")
 tutorial = NodePath("../UI/Tutorial")
 level_map = NodePath("../UI/LevelMap")
 camera = NodePath("../Camera3D")
+timer_label = NodePath("../UI/TimerPanel/TimerLabel")
+results = NodePath("../UI/Results")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=994450347]
 environment = SubResource("Environment_0quu1")
@@ -119,3 +123,103 @@ anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 script = ExtResource("4_jyhfs")
+
+[node name="Results" type="PanelContainer" parent="UI" unique_id=143732926]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -184.0
+offset_top = -201.0
+offset_right = 184.0
+offset_bottom = 201.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = ExtResource("3_sugp2")
+
+[node name="VBox" type="VBoxContainer" parent="UI/Results" unique_id=740105629]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="ResultTitle" type="Label" parent="UI/Results/VBox" unique_id=113859965]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 32
+text = "Level complete!"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MovesLabel" type="Label" parent="UI/Results/VBox" unique_id=1972351590]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 32
+text = "Moves: 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="TimeLabel" type="Label" parent="UI/Results/VBox" unique_id=136088931]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 32
+text = "Time: 0:00"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BestLabel" type="Label" parent="UI/Results/VBox" unique_id=155600118]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 32
+text = "Best: 0:00"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Stars" type="HBoxContainer" parent="UI/Results/VBox" unique_id=75384334]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+
+[node name="Star1" type="TextureRect" parent="UI/Results/VBox/Stars" unique_id=41718586]
+modulate = Color(1, 0.8, 0.2, 1)
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+texture = ExtResource("5_tbgi4")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Star2" type="TextureRect" parent="UI/Results/VBox/Stars" unique_id=149653889]
+modulate = Color(1, 0.8, 0.2, 1)
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+texture = ExtResource("5_tbgi4")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Star3" type="TextureRect" parent="UI/Results/VBox/Stars" unique_id=1828921749]
+modulate = Color(1, 0.8, 0.2, 1)
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+texture = ExtResource("5_tbgi4")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Continue" type="Button" parent="UI/Results/VBox" unique_id=109118659]
+custom_minimum_size = Vector2(210, 60)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.11372549, 0.16862746, 0.3254902, 1)
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = ExtResource("6_tefeu")
+text = "Continue"
+
+[node name="TimerPanel" type="PanelContainer" parent="UI" unique_id=1723154578]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 60.0
+offset_bottom = 60.0
+theme_override_styles/panel = ExtResource("3_sugp2")
+
+[node name="TimerLabel" type="Label" parent="UI/TimerPanel" unique_id=1639282384]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "0:00"
