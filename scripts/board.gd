@@ -1,17 +1,30 @@
 extends Node3D
 
 const LEVELS := [
-	{ # 1: il riflesso
+	# ─── Sezione 1 · Meadow (4×4, solo rocce) ───
+	{ # 1 · 6 mosse: il riflesso
 		"a": ["P...", "....", ".#..", "...G"],
 		"b": ["...P", "....", "..#.", "G..."],
 	},
-	{ # 2: una roccia ferma uno solo dei due
+	{ # 2 · 6 mosse: una roccia ferma uno solo dei due
 		"a": ["P...", "....", "....", "...G"],
 		"b": ["...P", "....", "....", "#G.."],
 	},
-	{ # 3: usa rocce e bordi per riallinearli
+	{ # 3 · 9 mosse: usa rocce e bordi per riallinearli
 		"a": ["....", "..G.", "#...", "..P."],
 		"b": ["#..P", "....", "....", "..#G"],
+	},
+	{ # 4 · 10 mosse
+		"a": ["....", "...#", "P..#", ".G.."],
+		"b": ["..G.", "#...", "....", "#P.."],
+	},
+	{ # 5 · 12 mosse
+		"a": [".P..", "..##", ".G..", "...."],
+		"b": [".#..", ".#.G", "P...", "...."],
+	},
+	{ # 6 · 14 mosse
+		"a": ["....", ".##.", "G.#P", "...."],
+		"b": ["#.P.", ".#..", "G.#.", "...."],
 	},
 ]
 
