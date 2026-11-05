@@ -4,10 +4,7 @@
 
 Reflex is a small 3D pixel-art puzzle game. Two islands float face to face with a mirror in between, and there is one character on each. Every move you make moves *both* of them, but the reflected one goes the opposite way. Get both characters onto their goals on the same turn to clear the level.
 
-> 🚧 **Work in progress.** Built for the [Hack Club Crescent](https://crescent.hackclub.com) Arcade card.
-
-<!-- TODO: replace with a mid-game screenshot -->
-<!-- ![Reflex gameplay](docs/screenshot.png) -->
+<img src="docs/screenshot.png" alt="Reflex gameplay" width="800" height="420">
 
 ## Play
 
@@ -23,7 +20,7 @@ Reflex is a small 3D pixel-art puzzle game. Two islands float face to face with 
 | `Enter` | Confirm (character select, tutorial) |
 | `Esc` | Back to character select |
 
-## How it works
+## How this videogame works
 
 - Both characters move **at the same time**, one step per turn on a grid.
 - The reflected character mirrors your input: press **right** and it goes **left**.

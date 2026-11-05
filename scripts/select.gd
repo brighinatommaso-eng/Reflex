@@ -13,7 +13,7 @@ var pets: Array[Node3D] = []
 var anims: Array[AnimationPlayer] = []
 var cursor := 0
 var choosing_summer := true
-var picked_summer := -1  # indice dell'animale estivo (-1 = nessuno ancora)
+var picked_summer := -1
 
 func _ready() -> void:
 	for i in PETS.size():
@@ -27,14 +27,13 @@ func _ready() -> void:
 		add_child(pet)
 		pets.append(pet)
 		var ap: AnimationPlayer = pet.find_children("*", "AnimationPlayer", true, false)[0]
-		ap.get_animation("walk").loop_mode = Animation.LOOP_LINEAR  # cammina all'infinito
+		ap.get_animation("walk").loop_mode = Animation.LOOP_LINEAR
 		anims.append(ap)
 	update_view()
 
 func pet_path(i: int) -> String:
 	return "res://assets/cube_pets/animal-%s.glb" % PETS[i]
 
-# L'animale i è già stato preso per l'estate (e quindi non si può scegliere ora)?
 func is_taken(i: int) -> bool:
 	return not choosing_summer and i == picked_summer
 
@@ -44,7 +43,7 @@ func update_view() -> void:
 		var s := 0.65 if selected else 0.5
 		pets[i].scale = Vector3.ONE * s
 		pets[i].position.y = 0.5 + 0.3 * s
-		pets[i].visible = not is_taken(i)  # quello già scelto sparisce
+		pets[i].visible = not is_taken(i)
 		anims[i].play("walk" if selected else "static")
 	title.text = "Choose your SUMMER friend" if choosing_summer else "Choose your WINTER friend"
 	pet_name.text = PETS[cursor].capitalize()
@@ -62,13 +61,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		pick()
 	elif event.is_action_pressed("ui_cancel") and not choosing_summer:
 		choosing_summer = true
-		cursor = picked_summer  # torni sull'animale che avevi scelto
+		cursor = picked_summer
 		update_view()
 
 func move_cursor(step: int) -> void:
 	var next := cursor + step
 	if is_taken(next):
-		next += step  # salta quello già preso
+		next += step
 	if next >= 0 and next < PETS.size():
 		cursor = next
 		update_view()
@@ -78,7 +77,6 @@ func pick() -> void:
 		Game.pet_a = pet_path(cursor)
 		picked_summer = cursor
 		choosing_summer = false
-		# il cursore non può restare sull'animale appena preso: va al successivo libero
 		cursor = (cursor + 1) % PETS.size()
 		update_view()
 	else:

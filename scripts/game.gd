@@ -1,23 +1,44 @@
 extends Node
 
-const SAVE_PATH := "user://progress.cfg"  # user:// = cartella dati del gioco, anche nel browser
+const SAVE_PATH := "user://progress.cfg"
+const LEVELS_PATH := "res://levels/levels.json"
 
-# I due animali scelti
 var pet_a := "res://assets/cube_pets/animal-bunny.glb"
 var pet_b := "res://assets/cube_pets/animal-cat.glb"
 
-var level_index := 0             # livello in corso
-var best := 0                    # quanti livelli hai completato (salvato)
-var tutorial_seen := false       # salvato: il tutorial compare una volta sola
-var tips_seen: Array = []        # salvato: i livelli di cui hai già letto il suggerimento
-var best_times := {}             # salvato: livello -> miglior tempo in secondi
-var stars := {}                  # salvato: livello -> stelle migliori (1-3)
-var open_map_on_start := false   # dopo la selezione dei personaggi si apre la mappa
+var level_index := 0
+var best := 0
+var tutorial_seen := false
+var tips_seen: Array = []
+var best_times := {}
+var stars := {}
+var open_map_on_start := false
+var editing := false
+var testing := false
+var edit_level := {}
+var edit_index := 0
+var levels: Array = []
 
 func _ready() -> void:
+	load_levels()
 	load_progress()
 
-# Segna il livello come finito, aggiorna record e stelle. Restituisce true se è un nuovo record.
+func load_levels() -> void:
+	if FileAccess.file_exists(LEVELS_PATH):
+		levels = JSON.parse_string(FileAccess.get_file_as_string(LEVELS_PATH))
+		return
+	var constants := (load("res://scripts/board.gd") as GDScript).get_script_constant_map()
+	if not constants.has("LEVELS"):
+		push_error("levels.json is missing and board.gd has no LEVELS to copy")
+		return
+	levels = (constants["LEVELS"] as Array).duplicate(true)
+	save_levels()
+
+func save_levels() -> void:
+	DirAccess.make_dir_recursive_absolute(LEVELS_PATH.get_base_dir())
+	var file := FileAccess.open(LEVELS_PATH, FileAccess.WRITE)
+	file.store_string(JSON.stringify(levels, "\t", false))
+
 func complete_level(i: int, time: float, earned_stars: int) -> bool:
 	if i + 1 > best:
 		best = i + 1
