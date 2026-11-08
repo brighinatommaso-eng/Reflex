@@ -2,7 +2,7 @@
 
 This is the reference for the game's rules and level progression. If code and this file disagree, fix one of them.
 
-## Core rules
+## Main rules
 
 1. The board is two grids of the same size, **A** (the player's island) and **B** (the reflection), separated by a mirror.
 2. One input = one turn. Both characters try to move one tile at the same time.

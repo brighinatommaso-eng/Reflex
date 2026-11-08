@@ -1,10 +1,97 @@
 extends Node3D
 
+const LEVELS := [
+	{ 
+		"a": ["P...", "....", ".#..", "...G"],
+		"b": ["...P", "....", "..#.", "G..."],
+		"par": 6,
+		"time": 15,
+	},
+	{ 
+		"a": ["P...", "....", "....", "...G"],
+		"b": ["...P", "....", "....", "#G.."],
+		"par": 6,
+		"time": 15,
+	},
+	{ 
+		"a": ["....", "..G.", "#...", "..P."],
+		"b": ["#..P", "....", "....", "..#G"],
+		"par": 9,
+		"time": 25,
+	},
+	{ 
+		"a": ["....", "...#", "P..#", ".G.."],
+		"b": ["..G.", "#...", "....", "#P.."],
+		"par": 10,
+		"time": 30,
+	},
+	{ 
+		"a": [".P..", "..##", ".G..", "...."],
+		"b": [".#..", ".#.G", "P...", "...."],
+		"par": 12,
+		"time": 35,
+	},
+	{ 
+		"a": ["....", ".##.", "G.#P", "...."],
+		"b": ["#.P.", ".#..", "G.#.", "...."],
+		"par": 14,
+		"time": 40,
+	},
+	{ 
+		"a": [".....", ".GP..", ".....", "...#.", "....."],
+		"ha": ["21000", "20000", "20000", "20000", "20000"],
+		"b": ["..P..", ".....", "....G", ".....", ".#..."],
+		"hb": ["21110", "20000", "20000", "10000", "00000"],
+		"par": 8,
+		"time": 23,
+		"tip": ["New: heights!", "No jump button: just walk with [img=36x36]res://assets/input_prompts/Default/keyboard_arrows.png[/img]\nand your friends [b]hop up by themselves[/b].\n\nThey can climb [b]one step[/b] at a time,\nand jump down from [b]any height[/b]."],
+	},
+	{ 
+		"a": [".....", "..P..", "..G..", ".....", "....#"],
+		"ha": ["22210", "11000", "00000", "00000", "00000"],
+		"b": ["....#", "...G.", ".#...", "P....", "....."],
+		"hb": ["21000", "10000", "00000", "00000", "00000"],
+		"par": 10,
+		"time": 28,
+	},
+	{ 
+		"a": [".#...", "P...#", ".....", "...G.", "....."],
+		"ha": ["22110", "11110", "00000", "00000", "00000"],
+		"b": ["#P...", ".#...", ".....", ".....", "..G.."],
+		"hb": ["21000", "20000", "20000", "20000", "20000"],
+		"par": 12,
+		"time": 34,
+	},
+	{ 
+		"a": [".P#..", ".....", "....#", "...G.", "....."],
+		"ha": ["32100", "22000", "22000", "22000", "22000"],
+		"b": [".....", "#....", "G....", "P...#", "....."],
+		"hb": ["33221", "21100", "10000", "00000", "00000"],
+		"par": 13,
+		"time": 37,
+	},
+	{ 
+		"a": [".G#..", ".....", "P....", ".....", "...#."],
+		"ha": ["33222", "22222", "10000", "00000", "00000"],
+		"b": ["....#", "..P..", ".#...", "#.G..", "....."],
+		"hb": ["32222", "21111", "21111", "10000", "00000"],
+		"par": 15,
+		"time": 42,
+	},
+	{ 
+		"a": ["...#.", "P..#.", "..#..", ".....", "G...."],
+		"ha": ["32100", "31100", "20000", "20000", "20000"],
+		"b": [".....", "#....", ".#...", "#.PG.", "....."],
+		"hb": ["33222", "32222", "21100", "20000", "20000"],
+		"par": 17,
+		"time": 48,
+	},
+]
 
 const TILE := 1.0
-const GAP := 2
-const CAMERA_DIR := Vector3(-0.4545, -0.766, -0.4545)
-const UNDER_CELL := 0.5
+const GAP := 2 
+const CAMERA_DIR := Vector3(-0.4545, -0.766, -0.4545) 
+const UNDER_CELL := 0.5 
 const PLAYER_SCALE := 0.5
 const PLAYER_LIFT := 0.15
 const MOVE_TIME := 0.15
@@ -21,11 +108,11 @@ const ICE := preload("res://assets/kaykit_blockbits/models/glass.gltf")
 @export var tutorial: Control
 @export var level_map: Control
 @export var camera: Camera3D
-@export var timer_label: Label
-@export var results: Control
-@export var create_button: Button
-@export var editor_bar: Control
-@export var edit_button: Button
+@export var timer_label: Label   
+@export var results: Control     
+@export var create_button: Button   
+@export var editor_bar: Control     
+@export var edit_button: Button     
 
 class Walker:
 	var rows: Array
@@ -34,24 +121,24 @@ class Walker:
 	var goal := Vector2i.ZERO
 	var node: Node3D
 	var anim: AnimationPlayer
-	var heights: Array = []
-	var fell := false
+	var heights: Array = []  
+	var fell := false        
 
 var walkers: Array[Walker] = []
 var moving := false
 var won := false
 var history: Array = []
-var lost := false
-var elapsed := 0.0
-var picking_edit := false
-var built: Array[Node] = []
+var lost := false      
+var elapsed := 0.0     
+var picking_edit := false    
+var built: Array[Node] = []  
 
 func _ready() -> void:
 	level_map.level_chosen.connect(_on_level_chosen)
 	results.get_node("VBox/Continue").pressed.connect(_on_continue)
 	create_button.pressed.connect(_on_create_pressed)
 	edit_button.pressed.connect(_on_edit_pressed)
-	create_button.visible = OS.is_debug_build()
+	create_button.visible = OS.is_debug_build() 
 	edit_button.visible = OS.is_debug_build()
 	for b in [create_button, edit_button]:
 		level_map.style_button(b, Color("9fe3c4"), 22, 16)
@@ -131,11 +218,11 @@ func build_island(rows: Array, heights: Array, origin: Vector3, floor_scene: Pac
 		var row: String = rows[y]
 		for x in row.length():
 			if row[x] == "O":
-				continue
+				continue  
 			var pos := origin + Vector3(x * TILE, 0, y * TILE)
 			var h := height_at(w, Vector2i(x, y))
 			for k in h:
-				place(DIRT, pos + Vector3(0, k, 0), 0.5)
+				place(DIRT, pos + Vector3(0, k, 0), 0.5)  
 			place(ICE if row[x] == "~" else floor_scene, pos + Vector3(0, h, 0), 0.5)
 			var top := pos + Vector3(0, 0.5 + h, 0)
 			match row[x]:
@@ -154,13 +241,13 @@ func add_underside(origin: Vector3, rows: Array) -> void:
 	var width: int = (rows[0] as String).length()
 	var depth_rows: int = rows.size()
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash(origin)
+	rng.seed = hash(origin)  
 	var cx := (width - 1) / 2.0
 	var cz := (depth_rows - 1) / 2.0
-	var layers := int(maxi(width, depth_rows) * 2.5)
+	var layers := int(maxi(width, depth_rows) * 2.5)  
 	var cols := int(width / UNDER_CELL)
 	var lines := int(depth_rows / UNDER_CELL)
-	var drift := Vector2.ZERO
+	var drift := Vector2.ZERO  
 	var dirt: Array[Transform3D] = []
 	var stone: Array[Transform3D] = []
 	for k in layers:
@@ -169,14 +256,14 @@ func add_underside(origin: Vector3, rows: Array) -> void:
 		drift.y = clampf(drift.y + rng.randf_range(-0.12, 0.12), -0.6, 0.6)
 		var y := -0.5 - UNDER_CELL * (k + 0.5)
 		var placed := 0
-		var closest := Vector3.ZERO
+		var closest := Vector3.ZERO     
 		var closest_dist := INF
 		for i in cols:
 			for j in lines:
 				var px := -0.5 + UNDER_CELL * (i + 0.5)
 				var pz := -0.5 + UNDER_CELL * (j + 0.5)
 				if is_hole(rows, px, pz):
-					continue
+					continue  
 				var offset := Vector2(px - cx - drift.x, pz - cz - drift.y)
 				if offset.length_squared() < closest_dist:
 					closest_dist = offset.length_squared()
@@ -193,7 +280,7 @@ func add_underside(origin: Vector3, rows: Array) -> void:
 						stone.append(t)
 					placed += 1
 		if placed == 0:
-			stone.append(block_transform(origin + closest))
+			stone.append(block_transform(origin + closest))  
 	add_multimesh(DIRT, dirt)
 	add_multimesh(STONE, stone)
 
@@ -276,14 +363,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			get_tree().change_scene_to_file("res://scenes/select.tscn")
 		return
 	if Game.editing or level_map.visible or results.visible:
-		return
+		return  
 	if tutorial.visible:
 		if event.is_action_pressed("ui_accept"):
 			tutorial.hide()
 			if Game.level_index == 0:
 				Game.tutorial_seen = true
 			else:
-				Game.tips_seen.append(Game.level_index)
+				Game.tips_seen.append(Game.level_index)  
 			Game.save_progress()
 			intro_message()
 		return
@@ -323,8 +410,8 @@ func try_move(dir: Vector2i) -> void:
 			var from := w.node.position
 			var to := cell_to_world(w, target)
 			var steps := absi(target.x - w.cell.x) + absi(target.y - w.cell.y)
-			var climb := maxf(0.0, to.y - from.y)
-			var jump := (0.25 + climb) if steps == 1 else 0.0
+			var climb := maxf(0.0, to.y - from.y)  
+			var jump := (0.25 + climb) if steps == 1 else 0.0  
 			var duration := MOVE_TIME * (1.0 + 0.5 * (steps - 1)) * (1.6 if from.y != to.y else 1.0)
 			w.cell = target
 			w.fell = result["fell"]
@@ -360,25 +447,25 @@ func _on_move_finished() -> void:
 func fall(w: Walker) -> void:
 	var t := create_tween().set_parallel(true)
 	t.tween_property(w.node, "position:y", w.node.position.y - 15.0, 1.6) \
-		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	t.tween_property(w.node, "rotation:y", w.node.rotation.y + TAU, 1.6)
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)             
+	t.tween_property(w.node, "rotation:y", w.node.rotation.y + TAU, 1.6)  
 	t.tween_property(w.node, "scale", Vector3.ONE * PLAYER_SCALE * 0.6, 1.6) \
-		.set_delay(0.6)
+		.set_delay(0.6)                                             
 
 func win() -> void:
 	won = true
-	if Game.testing:
+	if Game.testing:  
 		show_message("Solved in %d moves!" % history.size())
 		await get_tree().create_timer(1.5).timeout
 		back_to_editor()
 		return
 	var level: Dictionary = Game.levels[Game.level_index]
-	var moves := history.size()
-	var stars := 1
+	var moves := history.size()                                
+	var stars := 1                                             
 	if moves <= level.get("par", 0):
-		stars += 1
+		stars += 1                                             
 	if elapsed <= level.get("time", 0):
-		stars += 1
+		stars += 1                                             
 	var new_record := Game.complete_level(Game.level_index, elapsed, stars)
 	show_message("Level complete!")
 	await get_tree().create_timer(1.0).timeout
@@ -396,7 +483,7 @@ func show_results(level: Dictionary, moves: int, stars: int, new_record: bool) -
 	for i in star_nodes.size():
 		(star_nodes[i] as CanvasItem).modulate = Color("ffcc33") if i < stars else Color(1, 1, 1, 0.25)
 	results.show()
-	box.get_node("Continue").grab_focus()
+	box.get_node("Continue").grab_focus()  
 
 func _on_continue() -> void:
 	results.hide()
@@ -439,13 +526,13 @@ func undo() -> void:
 	if history.is_empty():
 		return
 	for t in get_tree().get_processed_tweens():
-		t.kill()
+		t.kill()  
 	var cells: Array = history.pop_back()
 	for i in walkers.size():
 		var w := walkers[i]
 		w.cell = cells[i]
 		w.fell = false
-		w.node.scale = Vector3.ONE * PLAYER_SCALE
+		w.node.scale = Vector3.ONE * PLAYER_SCALE  
 		w.node.position = cell_to_world(w, w.cell)
 		w.anim.play("static")
 	if lost:

@@ -12,6 +12,7 @@ const NODE_SIZE := 76.0
 const PANEL_SIZE := Vector2(1000, 580)
 const SECTION_SIZE := 6
 const SECTION_NAMES := ["Meadow", "Cliffs", "Frozen Lake"]
+const PLANNED_SECTIONS := 3
 
 var count := 1
 var best := 0
@@ -21,6 +22,7 @@ var points: Array[Vector2] = []
 var node_buttons: Array[Button] = []
 var title := Label.new()
 var subtitle := Label.new()
+var wip_label := Label.new()
 var section_prev := Button.new()
 var section_next := Button.new()
 var prev_button := Button.new()
@@ -46,6 +48,12 @@ func _ready() -> void:
 	subtitle.add_theme_font_size_override("font_size", 28)
 	subtitle.add_theme_color_override("font_color", MINT)
 	add_child(subtitle)
+	wip_label.text = "Work in progress\nComing soon!"
+	wip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	wip_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	wip_label.add_theme_font_size_override("font_size", 40)
+	wip_label.add_theme_color_override("font_color", Color.WHITE)
+	add_child(wip_label)
 	section_prev.text = "<"
 	section_next.text = ">"
 	for b in [section_prev, section_next]:
@@ -55,9 +63,9 @@ func _ready() -> void:
 		add_child(b)
 	section_prev.pressed.connect(func(): show_section(section - 1))
 	section_next.pressed.connect(func(): show_section(section + 1))
-	prev_button.text = "<  Previous"
+	prev_button.text = "<   Previous"
 	replay_button.text = "Replay"
-	next_button.text = "Next  >"
+	next_button.text = "Next   >"
 	for b in [prev_button, replay_button, next_button]:
 		style_button(b, MINT, 26, 18)
 		b.custom_minimum_size = Vector2(210, 60)
@@ -85,13 +93,13 @@ func open(level_count: int, completed: int, current_index: int, heading: String)
 func show_section(s: int) -> void:
 	section = s
 	layout()
-	if not node_buttons[0].disabled:
+	if not node_buttons.is_empty() and not node_buttons[0].disabled:
 		node_buttons[0].grab_focus()
 	else:
 		replay_button.grab_focus()
 
 func section_count() -> int:
-	return ceili(float(count) / SECTION_SIZE)
+	return maxi(ceili(float(count) / SECTION_SIZE), PLANNED_SECTIONS)
 
 func is_reached(i: int) -> bool:
 	return i <= best and i < count
@@ -114,8 +122,12 @@ func layout() -> void:
 	section_prev.position = Vector2(r.position.x + 60, r.position.y + 80)
 	section_next.position = Vector2(r.end.x - 116, r.position.y + 80)
 	section_prev.disabled = section == 0
-	section_next.disabled = section + 1 >= section_count() or not is_reached((section + 1) * SECTION_SIZE)
+	var next_first := (section + 1) * SECTION_SIZE
+	section_next.disabled = section + 1 >= section_count() or (next_first < count and not is_reached(next_first))
 	var first := section * SECTION_SIZE
+	wip_label.visible = first >= count
+	wip_label.position = r.position + Vector2(0, 140)
+	wip_label.size = Vector2(r.size.x, r.size.y - 260)
 	var last := mini(first + SECTION_SIZE, count)
 	var left := r.position.x + 110
 	var right := r.end.x - 110

@@ -1,18 +1,3 @@
-"""
-Reflex level checker.
-
-Reads the levels from levels/levels.json (written by the in-game editor) and, for every level, says
-whether it can be solved and the shortest solution, using exactly the game rules:
-
-  #  rock      blocks the friend who walks into it (the other one still moves)
-  O  hole      walking into it = you fall = the level is lost
-  ~  ice       you keep sliding straight until something stops you (never uphill)
-  G  flag      both friends must stand on their flag at the same time
-  P  start
-  heights ("ha"/"hb", digits 0-3): you can climb 1 step, and drop from any height
-
-Usage (from the project folder):   python tools/check_levels.py
-"""
 import json, sys
 from collections import deque
 from pathlib import Path
