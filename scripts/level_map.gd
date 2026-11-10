@@ -11,8 +11,8 @@ const PATH_TODO := Color(1, 0.95, 0.84, 0.35)
 const NODE_SIZE := 76.0
 const PANEL_SIZE := Vector2(1000, 580)
 const SECTION_SIZE := 6
-const SECTION_NAMES := ["Meadow", "Cliffs", "Frozen Lake"]
-const PLANNED_SECTIONS := 3
+const SECTION_NAMES := ["Meadow", "Cliffs", "Frozen Lake", "???"]
+const PLANNED_SECTIONS := 4
 
 var count := 1
 var best := 0
@@ -63,9 +63,9 @@ func _ready() -> void:
 		add_child(b)
 	section_prev.pressed.connect(func(): show_section(section - 1))
 	section_next.pressed.connect(func(): show_section(section + 1))
-	prev_button.text = "<   Previous"
+	prev_button.text = "<  Previous"
 	replay_button.text = "Replay"
-	next_button.text = "Next   >"
+	next_button.text = "Next  >"
 	for b in [prev_button, replay_button, next_button]:
 		style_button(b, MINT, 26, 18)
 		b.custom_minimum_size = Vector2(210, 60)
@@ -123,7 +123,7 @@ func layout() -> void:
 	section_next.position = Vector2(r.end.x - 116, r.position.y + 80)
 	section_prev.disabled = section == 0
 	var next_first := (section + 1) * SECTION_SIZE
-	section_next.disabled = section + 1 >= section_count() or (next_first < count and not is_reached(next_first))
+	section_next.disabled = section + 1 >= section_count()
 	var first := section * SECTION_SIZE
 	wip_label.visible = first >= count
 	wip_label.position = r.position + Vector2(0, 140)
